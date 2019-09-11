@@ -31,7 +31,7 @@ For your final project, we'll be building a Command Line database application.
     Whiteboard out your ideas and think about what columns you'll want in the corresponding tables, including foreign keys. Where are foreign keys stored in a many-to-many relationship? **Get your data modeling approved by an instructor before moving on to the next step.**
 
 ### Data Models    
-4. Make a new file for each model in your lib folder. What's the naming convention for a model filename? Check out previous labs for a reminder. Remember that activerecord gem from our gemfile? Make sure that every model inherits from activerecord base.
+4. Make a new file for each model in your lib folder. What's the naming convention for a moedel filename? Check out previous labs for a reminder. Remember that activerecord gem from our gemfile? Make sure that every model inherits from activerecord base.
 5. Be sure to include the relationships between your models. The <a href="http://guides.rubyonrails.org/association_basics.html">activerecord documentation</a> is a great source if you get stuck! Check out the ```has_many :through``` section when setting up your many-to-many relationship.
 
 ### Migrations
