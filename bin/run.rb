@@ -6,6 +6,9 @@ PROMPT = TTY::Prompt.new
 
 system 'clear'
 
+old_logger = ActiveRecord::Base.logger
+ActiveRecord::Base.logger = nil
+
 greet
 login
 
