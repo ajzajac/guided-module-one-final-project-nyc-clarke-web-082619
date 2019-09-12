@@ -10,8 +10,7 @@ def greet
 end
 
 def login
-    prompt = TTY::Prompt.new
-    input = prompt.ask('First, what is your name?')
+    input = PROMPT.ask('First, what is your name?')
     $customer = Customer.find_or_create_by(name: input)
     puts "Hello #{$customer.name}!"
     sleep(1)
@@ -20,26 +19,22 @@ end
 
 
 def user_choices_menu
-    prompt = TTY::Prompt.new
-    prompt.select('What would you like to do?') do |menu|
+    PROMPT.select('What would you like to do?') do |menu|
         menu.choice 'Make a reservation', -> {make_reservation}
         menu.choice 'Change a reservation', -> {change_reservation}
         menu.choice 'Find all my reservations', -> {find_all_reservations}
         menu.choice 'Cancel a reservation', -> {cancel_reservation}
-        menu.choice 'Review a restaurant', -> {make_review}
-        menu.choice 'Read restaurant reviews', -> {find_reviews}
+        menu.choice 'Review Options ', -> {review_menu}
         menu.choice 'Exit', -> {exit_app}
     end
 end
 
-
 def make_reservation
-    prompt = TTY::Prompt.new
-    result = prompt.collect do
+    result = PROMPT.collect do
         key(:num_of_guests).ask('How many is people is it for?:', convert: :int)
         key(:reservation_time).ask("Please type date and time. example 'YYYY-MM-DD 17:00'", convert: :datetime, required: true)
         key(:restaurant).select("Please select the name of the restaurant:", Hash[Restaurant.all.collect { |restaurant| 
-            ["#{restaurant.id} #{restaurant.name}", restaurant] 
+            ["#{restaurant.name}", restaurant] 
         }] )
     end
     Reservation.create(
@@ -48,32 +43,29 @@ def make_reservation
         customer: $customer,
         restaurant: result[:restaurant]
     )
-
     user_choices_menu
 end
 
 
 def change_reservation
-    prompt = TTY::Prompt.new
     customer_reservations = $customer.list_reservations
     puts "------------------------------------------------------------------------"
     reservation_choices = Hash[customer_reservations.collect { |reservation| 
-        ["#{reservation.id} #{reservation.restaurant.name} #{reservation.reservation_time}", reservation] 
+        ["#{reservation.restaurant.name} #{reservation.reservation_time}", reservation] 
     }]
-    selected_reservation = prompt.select("Choose your reservation to change:", reservation_choices)
+    selected_reservation = PROMPT.select("Choose your reservation to change:", reservation_choices)
     all_restaurants = Restaurant.all
     restaurant_choices = Hash[all_restaurants.collect { |restaurant| 
-        ["#{restaurant.id} #{restaurant.name}", restaurant] 
+        ["#{restaurant.name}", restaurant] 
     }]
-    result = prompt.collect do
+    result = PROMPT.collect do
         key(:num_of_guests).ask("How many guests will be attending? Currently: #{selected_reservation.num_of_guests}", convert: :int, default: selected_reservation.num_of_guests)
-        key(:reservation_time).ask("Please type date and time. example 'YYYY-MM-DD 17:00'", convert: :datetime, default: selected_reservation.reservation_time.to_s)
-        key(:restaurant).select("Please select the name of the restaurant:", restaurant_choices, default: all_restaurants.index(selected_reservation.restaurant)+1)
+        key(:reservation_time).ask("Please type date and time. example 'YYYY-MM- 17:00'", convert: :datetime, default: selected_reservation.reservation_time.to_s)
     end
     selected_reservation.update(
         num_of_guests: result[:num_of_guests],
-        reservation_time: result[:reservation_time],
-        restaurant: result[:restaurant] )
+        reservation_time: result[:reservation_time], 
+        )
     selected_reservation.save
     user_choices_menu
 end
@@ -81,39 +73,49 @@ end
 def find_all_reservations
     puts "Searching for reservations..."
     sleep(1)
-    prompt = TTY::Prompt.new
+    puts "Below is all of your reservations."
     puts "------------------------------------------------------------------------------------"
     customer_reservations = Reservation.all.select { |reservation| reservation.customer == $customer}
-    customer_reservations.each { |reservation| puts "ID: #{reservation.id} Time: #{reservation.reservation_time}, Restaurant: #{reservation.restaurant.name} in #{reservation.restaurant.location}, Party of: #{reservation.num_of_guests}"}
+    customer_reservations.each { |reservation| puts "Res ID: #{reservation.id} Time: #{reservation.reservation_time}, Restaurant: #{reservation.restaurant.name} in #{reservation.restaurant.location}, Party of: #{reservation.num_of_guests}"}
     puts "------------------------------------------------------------------------------------"
     user_choices_menu
 end
 
 def cancel_reservation
-    prompt = TTY::Prompt.new
     customer_reservations = $customer.list_reservations
     puts "------------------------------------------------------------------------"
     reservation_choices = Hash[customer_reservations.collect { |reservation| 
         ["#{reservation.restaurant.name} #{reservation.reservation_time}", reservation] 
     }]
-    selected_reservation = prompt.select("Choose your reservation to cancel:", reservation_choices)
-    if prompt.yes?("Are you sure?")
+    selected_reservation = PROMPT.select("Choose your reservation to cancel:", reservation_choices)
+    if PROMPT.yes?("Are you sure?")
         selected_reservation.destroy
     else 
         puts "Could not confirm."
         sleep(1)
     end
-
     user_choices_menu
+end
+
+def review_menu
+    PROMPT.select("What would you like to do?") do |menu|
+        menu.choice 'Write a review', -> {make_review}
+        menu.choice 'Read my reviews', -> {find_only_my_reviews}
+        menu.choice 'Change a review', -> {change_review}
+        menu.choice 'Read all restaurant reviews', -> {find_reviews}
+        menu.choice 'Read reviews by restaurant', -> {find_restaurant_review}
+        menu.choice 'Go back to Main Menu', -> {user_choices_menu}
+        menu.choice 'Exit', -> {exit_app}
+      end
+      user_choices_menu
 end
 
 
 def make_review
-    prompt = TTY::Prompt.new
     puts "========================================================="
-    result = prompt.collect do
+    result = PROMPT.collect do
         key(:restaurant).select("Please select the name of the restaurant:", Hash[Restaurant.all.collect { |restaurant| 
-            ["#{restaurant.id} #{restaurant.name}", restaurant] 
+            ["#{restaurant.name}", restaurant] 
         }] )
         key(:description).ask("Please type your review:", required: true)
     end
@@ -126,10 +128,53 @@ def make_review
 end
 
 def find_reviews 
-    customer_reviews = Review.all.select { |review| review.customer == $customer}
+    puts "Below are all restaurant reviews."
+    customer_reviews = Review.all
+    customer_reviews.map {|review| review.customer}
     puts "========================================================="
-    customer_reviews.each { |review| puts "Restaurant: #{review.restaurant.name}, Review: #{review.description}"}
+    customer_reviews.each { |review| puts "Restaurant: #{review.restaurant.name}, #{review.customer.name} says: #{review.description}"}
     puts "========================================================="
+    user_choices_menu
+end
+
+def find_only_my_reviews
+    puts "Below are your personal restaurant reviews."
+    customer_reviews = Review.all.select {|review| review.customer == $customer}
+    puts "========================================================="
+    customer_reviews.each { |review| puts "Restaurant: #{review.restaurant.name}, My review: #{review.description}"}
+    puts "========================================================="
+    user_choices_menu
+end
+
+def find_restaurant_review
+    result = PROMPT.collect do
+        key(:restaurant).select("Please select the name of the restaurant:", Hash[Restaurant.all.collect { |restaurant| 
+            ["#{restaurant.name}", restaurant] 
+        }] )
+    end
+    restaurant_reviews = Review.all.select { |review| review.restaurant == result[:restaurant] }
+    puts "========================================================="
+    restaurant_reviews.each { |review| puts "Restaurant: #{review.restaurant.name}, #{review.customer.name} says: #{review.description}"}
+    puts "========================================================="
+    user_choices_menu
+end
+
+def change_review
+   customer_review = $customer.reviews
+   puts "======================================================="
+   review_choices = Hash[customer_review.collect { |review| 
+    ["#{review.restaurant.name}: #{review.description}", review] 
+    }]
+    selected_review = PROMPT.select("Choose the review to change:", review_choices)
+    all_reviews = Review.all
+    review_choices = Hash[all_reviews.collect { |review| 
+        ["#{review.customer}", review] 
+    }]
+    result = PROMPT.collect do
+        key(:description).ask("Write your new review", default: selected_review.description)
+    end
+    selected_review.update(description: result[:description])
+    selected_review.save
     user_choices_menu
 end
 
