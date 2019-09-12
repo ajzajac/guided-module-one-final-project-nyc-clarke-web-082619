@@ -17,17 +17,27 @@ def login
     user_choices_menu
 end
 
-
 def user_choices_menu
     PROMPT.select('What would you like to do?') do |menu|
-        menu.choice 'Make a reservation', -> {make_reservation}
-        menu.choice 'Change a reservation', -> {change_reservation}
-        menu.choice 'Find all my reservations', -> {find_all_reservations}
-        menu.choice 'Cancel a reservation', -> {cancel_reservation}
-        menu.choice 'Review Options ', -> {review_menu}
+        menu.choice 'Reservations Menu', -> {reservation_menu}
+        menu.choice 'Reviews Menu', -> {review_menu}
         menu.choice 'Exit', -> {exit_app}
     end
 end
+
+def reservation_menu
+    PROMPT.select('What would you like to do?') do |menu|
+        menu.choice 'Make a Reservation', -> {make_reservation}
+        menu.choice 'Change a Reservation', -> {change_reservation}
+        menu.choice 'Find all my Reservations', -> {find_all_reservations}
+        menu.choice 'Cancel a Reservation', -> {cancel_reservation}
+        menu.choice 'Reviews Menu', -> {review_menu}
+        menu.choice 'Go back to Main Menu', -> {user_choices_menu}
+        menu.choice 'Exit', -> {exit_app}
+    end
+    user_choices_menu
+end
+
 
 def make_reservation
     result = PROMPT.collect do
@@ -49,7 +59,7 @@ end
 
 def change_reservation
     customer_reservations = $customer.list_reservations
-    puts "------------------------------------------------------------------------"
+    puts "============================================================="
     reservation_choices = Hash[customer_reservations.collect { |reservation| 
         ["#{reservation.restaurant.name} #{reservation.reservation_time}", reservation] 
     }]
@@ -73,17 +83,18 @@ end
 def find_all_reservations
     puts "Searching for reservations..."
     sleep(1)
-    puts "Below is all of your reservations."
-    puts "------------------------------------------------------------------------------------"
+    puts "Below are all of your reservations."
+    puts "===================================================================================="
     customer_reservations = Reservation.all.select { |reservation| reservation.customer == $customer}
     customer_reservations.each { |reservation| puts "Res ID: #{reservation.id} Time: #{reservation.reservation_time}, Restaurant: #{reservation.restaurant.name} in #{reservation.restaurant.location}, Party of: #{reservation.num_of_guests}"}
-    puts "------------------------------------------------------------------------------------"
+    puts "===================================================================================="
     user_choices_menu
 end
 
+
 def cancel_reservation
-    customer_reservations = $customer.list_reservations
-    puts "------------------------------------------------------------------------"
+    customer_reservations = $customer.reservations
+    puts "========================================================================"
     reservation_choices = Hash[customer_reservations.collect { |reservation| 
         ["#{reservation.restaurant.name} #{reservation.reservation_time}", reservation] 
     }]
@@ -91,7 +102,7 @@ def cancel_reservation
     if PROMPT.yes?("Are you sure?")
         selected_reservation.destroy
     else 
-        puts "Could not confirm."
+        puts "Sorry, could not confirm."
         sleep(1)
     end
     user_choices_menu
@@ -99,12 +110,12 @@ end
 
 def review_menu
     PROMPT.select("What would you like to do?") do |menu|
-        menu.choice 'Write a review', -> {make_review}
-        menu.choice 'Read my reviews', -> {find_only_my_reviews}
-        menu.choice 'Change a review', -> {change_review}
-        menu.choice 'Read all restaurant reviews', -> {find_reviews}
-        menu.choice 'Read reviews by restaurant', -> {find_restaurant_review}
-        menu.choice 'Go back to Main Menu', -> {user_choices_menu}
+        menu.choice 'Write a Review', -> {make_review}
+        menu.choice 'Read My Reviews', -> {find_only_my_reviews}
+        menu.choice 'Change a Review', -> {change_review}
+        menu.choice 'Read All Restaurant Reviews', -> {find_reviews}
+        menu.choice 'Read Reviews By Restaurant', -> {find_restaurant_review}
+        menu.choice 'Go Back To Main Menu', -> {user_choices_menu}
         menu.choice 'Exit', -> {exit_app}
       end
       user_choices_menu
@@ -124,7 +135,7 @@ def make_review
         restaurant: result[:restaurant],
         description: result[:description]
     )
-    user_choices_menu
+    review_menu
 end
 
 def find_reviews 
@@ -134,7 +145,7 @@ def find_reviews
     puts "========================================================="
     customer_reviews.each { |review| puts "Restaurant: #{review.restaurant.name}, #{review.customer.name} says: #{review.description}"}
     puts "========================================================="
-    user_choices_menu
+    review_menu
 end
 
 def find_only_my_reviews
@@ -143,7 +154,7 @@ def find_only_my_reviews
     puts "========================================================="
     customer_reviews.each { |review| puts "Restaurant: #{review.restaurant.name}, My review: #{review.description}"}
     puts "========================================================="
-    user_choices_menu
+    review_menu
 end
 
 def find_restaurant_review
@@ -156,26 +167,32 @@ def find_restaurant_review
     puts "========================================================="
     restaurant_reviews.each { |review| puts "Restaurant: #{review.restaurant.name}, #{review.customer.name} says: #{review.description}"}
     puts "========================================================="
-    user_choices_menu
+    review_menu
 end
 
 def change_review
-   customer_review = $customer.reviews
-   puts "======================================================="
-   review_choices = Hash[customer_review.collect { |review| 
-    ["#{review.restaurant.name}: #{review.description}", review] 
-    }]
-    selected_review = PROMPT.select("Choose the review to change:", review_choices)
-    all_reviews = Review.all
-    review_choices = Hash[all_reviews.collect { |review| 
-        ["#{review.customer}", review] 
-    }]
-    result = PROMPT.collect do
-        key(:description).ask("Write your new review", default: selected_review.description)
-    end
-    selected_review.update(description: result[:description])
+    puts "========================================================="
+    customer_review = $customer.reviews
+    if customer_review.length == 0
+       puts "Sorry you have no reviews to change."
+       puts "========================================================="
+    else
+        review_choices = Hash[customer_review.collect { |review| 
+        ["#{review.restaurant.name}: #{review.description}", review] 
+        }]
+        selected_review = PROMPT.select("Choose the review to change:", review_choices)
+        all_reviews = Review.all
+        review_choices = Hash[all_reviews.collect { |review| 
+            ["#{review.customer}", review] 
+        }]
+        result = PROMPT.collect do
+            key(:description).ask("Write your new review", default: selected_review.description)
+        end
+        selected_review.update(description: result[:description])
     selected_review.save
-    user_choices_menu
+    review_menu
+    end
+    
 end
 
 def exit_app
@@ -183,6 +200,8 @@ def exit_app
     puts "We hope you enjoyed your experience!"
     sleep(1)
     puts "Goodbye!"
+    sleep(2)
+    system "clear"
     exit
 end
 
