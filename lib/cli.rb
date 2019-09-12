@@ -1,16 +1,14 @@
 $customer = nil
 
 def greet
-    puts "Hello!"
-    sleep(1)
-    puts "Welcome to Easy Rez, the simple, user-friendly restaurant booking app!"
-    sleep(1)
-    puts "Just select a restaurant, pick a date and time, and then enjoy the food!"
-    puts "======================================================================="
+    puts "******* Welcome to Easy Rez, the simple, user-friendly restaurant booking app! *******"
+    sleep(2)
+    puts "           Select a restaurant, pick a date and time, then enjoy the food!"
+    puts "======================================================================================="
 end
 
 def login
-    input = PROMPT.ask('First, what is your name?')
+    input = PROMPT.ask('First, what is your full name?')
     $customer = Customer.find_or_create_by(name: input)
     puts "Hello #{$customer.name}!"
     sleep(1)
@@ -19,9 +17,9 @@ end
 
 def user_choices_menu
     PROMPT.select('What would you like to do?') do |menu|
-        menu.choice 'Reservations Menu', -> {reservation_menu}
-        menu.choice 'Reviews Menu', -> {review_menu}
-        menu.choice 'Exit', -> {exit_app}
+        menu.choice 'Go To Reservations Menu', -> {reservation_menu}
+        menu.choice 'Go To Reviews Menu', -> {review_menu}
+        menu.choice 'Exit App', -> {exit_app}
     end
 end
 
@@ -29,11 +27,11 @@ def reservation_menu
     PROMPT.select('What would you like to do?') do |menu|
         menu.choice 'Make a Reservation', -> {make_reservation}
         menu.choice 'Change a Reservation', -> {change_reservation}
-        menu.choice 'Find all my Reservations', -> {find_all_reservations}
+        menu.choice 'Find All My Reservations', -> {find_all_reservations}
         menu.choice 'Cancel a Reservation', -> {cancel_reservation}
-        menu.choice 'Reviews Menu', -> {review_menu}
-        menu.choice 'Go back to Main Menu', -> {user_choices_menu}
-        menu.choice 'Exit', -> {exit_app}
+        menu.choice 'Go To Reviews Menu', -> {review_menu}
+        menu.choice 'Go To Main Menu', -> {user_choices_menu}
+        menu.choice 'Exit App', -> {exit_app}
     end
     user_choices_menu
 end
@@ -53,7 +51,7 @@ def make_reservation
         customer: $customer,
         restaurant: result[:restaurant]
     )
-    user_choices_menu
+    reservation_menu
 end
 
 
@@ -77,7 +75,7 @@ def change_reservation
         reservation_time: result[:reservation_time], 
         )
     selected_reservation.save
-    user_choices_menu
+    reservation_menu
 end
 
 def find_all_reservations
@@ -88,7 +86,7 @@ def find_all_reservations
     customer_reservations = Reservation.all.select { |reservation| reservation.customer == $customer}
     customer_reservations.each { |reservation| puts "Res ID: #{reservation.id} Time: #{reservation.reservation_time}, Restaurant: #{reservation.restaurant.name} in #{reservation.restaurant.location}, Party of: #{reservation.num_of_guests}"}
     puts "===================================================================================="
-    user_choices_menu
+    reservation_menu
 end
 
 
@@ -105,7 +103,7 @@ def cancel_reservation
         puts "Sorry, could not confirm."
         sleep(1)
     end
-    user_choices_menu
+    reservation_menu
 end
 
 def review_menu
@@ -115,8 +113,8 @@ def review_menu
         menu.choice 'Change a Review', -> {change_review}
         menu.choice 'Read All Restaurant Reviews', -> {find_reviews}
         menu.choice 'Read Reviews By Restaurant', -> {find_restaurant_review}
-        menu.choice 'Go Back To Main Menu', -> {user_choices_menu}
-        menu.choice 'Exit', -> {exit_app}
+        menu.choice 'Go To Main Menu', -> {user_choices_menu}
+        menu.choice 'Exit App', -> {exit_app}
       end
       user_choices_menu
 end
